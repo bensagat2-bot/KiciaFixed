@@ -27812,6 +27812,18 @@ local v117 = tbl17.cV()
 local index2 = {}
 index2.__index = index2
 
+local function reapplyCosmetics()
+local runtime = _G.KiciaCosmeticsRuntime
+local items = runtime ~= nil and runtime._items or nil
+if items == nil then
+return
+end
+pcall(function()
+items:RefreshDataIfEnabled()
+items:RenderIfEnabled()
+end)
+end
+
 index2.new = function(arg)
 return setmetatable({ _fighterState = arg }, index2)
 end
@@ -27837,9 +27849,17 @@ end
 index2._ForcePickLoadoutAsync = function(arg, arg2)
 fireServer(pickWeaponsRemote, arg2)
 local v118 = nil
+local reapplyScheduled = false
 
 return v115.new(function(arg3)
 v118 = v117(arg._fighterState.Inner.ItemAdded, function()
+if not reapplyScheduled then
+reapplyScheduled = true
+task.delay(0.12, function()
+reapplyCosmetics()
+task.delay(0.3, reapplyCosmetics)
+end)
+end
 arg3()
 end)
 end):timeout(1.5):finally(function()
@@ -27862,6 +27882,8 @@ end
 
 return index2
 end
+
+_G.KiciaCosmeticsRuntime = nil
 
 tbl17.cW = function()
 local cw = tbl17.cache.cW
@@ -62263,8 +62285,23 @@ local v116 = tbl17.jA()
 tbl17.jB()
 local v117 = tbl17.jy()
 local v118 = tbl17.jC()
+local cframeCodec = tbl17.cM()
 local vector = Vector3.new(0, -0.7, 0.05)
 local vector2 = Vector3.new(0, -3.85, 0.05)
+
+local function makeHeadObjectSpace(head)
+local success, size = pcall(function()
+return head.Size
+end)
+local y = 0.95
+if success and size ~= nil then
+local measured = size.Y * 0.45
+if measured == measured and measured > 0 then
+y = math.min(measured, 0.95)
+end
+end
+return cframeCodec.encode(CFrame.new(0, y, 0))
+end
 
 local tbl18 = {
 ["\0"] = -9e37,
@@ -62332,7 +62369,7 @@ local v121 = (flag19 and { tbl18 } or { tbl20 })[1]
 local v122 = (flag19 and { tbl19 } or { tbl21 })[v86[63]]
 
 return n, function()
-arg4:ShootEncoded(v121, v122, hitboxHead, tbl22)
+arg4:ShootEncoded(v121, v122, hitboxHead, makeHeadObjectSpace(hitboxHead))
 end
 end
 
@@ -62361,8 +62398,23 @@ local v116 = tbl17.jA()
 tbl17.jB()
 local v117 = tbl17.jy()
 local v118 = tbl17.jC()
+local cframeCodec = tbl17.cM()
 local vector = Vector3.new(0, -v86[195], 0.05)
 local vector2 = Vector3.new(v86[186], -3.85, 0.05)
+
+local function makeHeadObjectSpace(head)
+local success, size = pcall(function()
+return head.Size
+end)
+local y = 0.95
+if success and size ~= nil then
+local measured = size.Y * 0.45
+if measured == measured and measured > 0 then
+y = math.min(measured, 0.95)
+end
+end
+return cframeCodec.encode(CFrame.new(0, y, 0))
+end
 
 local tbl18 = {
 ["\0"] = -9e37,
@@ -62454,7 +62506,7 @@ local v127 = fn38(v125, n33, v122, v123)
 local now2 = os.clock()
 if now2 < arg._hitboxWindowUntil then
 return n, fn37(v121, v122), function()
-arg4:HeavyAttackEncoded(v126, v127, hitboxHead, tbl22)
+arg4:HeavyAttackEncoded(v126, v127, hitboxHead, makeHeadObjectSpace(hitboxHead))
 end
 end
 
@@ -62470,12 +62522,12 @@ if arg4.Name == "Knife" then
 arg:_RecordBackstab()
 
 return n, fn37(v121, v122), function()
-arg4:HeavyAttackEncoded(v126, v127, hitboxHead, tbl22)
+arg4:HeavyAttackEncoded(v126, v127, hitboxHead, makeHeadObjectSpace(hitboxHead))
 end
 end
 
 return n, nil, function()
-arg4:AttackEncoded(v126, v127, hitboxHead, tbl22)
+arg4:AttackEncoded(v126, v127, hitboxHead, makeHeadObjectSpace(hitboxHead))
 end
 end
 
@@ -66265,6 +66317,7 @@ local v235 = v209
 local reserve = v235.Reserve
 local v236 = v147:Add(tbl17.j_().new(v199, v191, v202, v208, reserve(v235, { "DataValueChanged" })))
 local v237 = v147:Add(v128.new(v199, v190, v197, v193, v192:Reserve(), v215))
+_G.KiciaCosmeticsRuntime = v237
 local v238 = v147:Add(v129.new(v237))
 local coreLoad = v238:LoadCoreConfig()
 if not coreLoad.Ok and isfile and not isfile("kiciahook/rivals_v3/cosmetics/states/core_config.json") then
